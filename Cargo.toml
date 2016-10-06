@@ -1,0 +1,6 @@
+[package]
+name = "paul_heckel_diff"
+version = "0.1.0"
+authors = ["Lars Pensjö <lars.pensjo@gmail.com>"]
+
+[dependencies]
