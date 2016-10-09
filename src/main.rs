@@ -35,9 +35,16 @@ fn main() {
 	let mut old_mapping : Vec<Reference> = vec![Reference::Unknown; symbol_table_old.len()];
 	let mut new_mapping : Vec<Reference> = vec![Reference::Unknown; symbol_table_new.len()];
 	
+	update_unique_mappings(&unique_symbols, &symbol_table_old, &symbol_table_new, &mut old_mapping, &mut new_mapping);
+	
+	println!("Mapping from old: {:?}", old_mapping);
+	println!("Mapping from new: {:?}", new_mapping);
+}
+
+fn update_unique_mappings(unique_symbols : &Vec<Symbol>, old : &SymbolTable, new : &SymbolTable, old_mapping : &mut Vec<Reference>, new_mapping : &mut Vec<Reference>) {
 	for symbol in unique_symbols {
-		let TokenInfo{count:_, pos:ref ref_new} = symbol_table_new[&symbol];
-		let TokenInfo{count:_, pos:ref ref_old} = symbol_table_old[&symbol];
+		let TokenInfo{count:_, pos:ref ref_new} = new[symbol];
+		let TokenInfo{count:_, pos:ref ref_old} = old[symbol];
 		let line_new = match ref_new {
 			&Reference::Unique(l) => l,
 			_ => panic!(""),
@@ -49,9 +56,6 @@ fn main() {
 		old_mapping[line_old] = Reference::Unique(line_new);
 		new_mapping[line_new] = Reference::Unique(line_old);
 	}
-	
-	println!("Mapping from old: {:?}", old_mapping);
-	println!("Mapping from new: {:?}", new_mapping);
 }
 
 fn count(s : &mut SymbolTable,  v : Vec<Symbol>) {
