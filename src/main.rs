@@ -58,8 +58,8 @@ fn update_neighbors(v1 : &Vec<Symbol>, v2 : &Vec<Symbol>, map1 : &mut Vec<Refere
 			Reference::Unknown => if v2[new_delta] != sym1 { return; },
 			_ => return,
 		}
-		map1[i+1] = Reference::Confirmed(new_delta);
-		map2[line_new+1] = Reference::Confirmed(i_delta);
+		map1[i_delta] = Reference::Confirmed(new_delta);
+		map2[new_delta] = Reference::Confirmed(i_delta);
 		println!("Matched token {} one line {} with line {}", sym1,  i_delta, new_delta);
 	};
 	for i in 0 .. v1.len()-2 {
