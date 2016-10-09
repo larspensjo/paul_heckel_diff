@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
+struct TokenInfo {
+	count: u32,
+	pos: u32,
+}
 type Symbol = char;
-type SymbolTable = HashMap<Symbol, u32>;
+type SymbolTable = HashMap<Symbol, TokenInfo>;
 
 fn main() {
 	let start_sym = 'Ä';
@@ -15,15 +20,34 @@ fn main() {
 	count(&mut symbol_table_new, v2);
     println!("old symbol table {:?}", symbol_table_old);
     println!("New symbol table {:?}", symbol_table_new);
+	let unique_symbols = unique(&symbol_table_old, &symbol_table_new);
+	println!("Unique symbols: {:?}", unique_symbols);
 }
 
-fn count(s : &mut SymbolTable,  v : Vec<char>) {
+fn count(s : &mut SymbolTable,  v : Vec<Symbol>) {
+	let mut line : u32 = 0;
 	for symbol in v {
-		let old = match s.get(&symbol) {
-			Some(number) => *number,
-			_ => 0,
+		let new : TokenInfo = match s.get(&symbol) {
+			Some(info) => TokenInfo{count: info.count+1, pos: line},
+			_ => TokenInfo {count:1, pos: line},
 		};
-		s.insert(symbol, old+1);
-		println!("Symbol: {}", symbol);
+		s.insert(symbol, new);
+		line = line + 1;
 	}
+}
+
+fn unique(old : &SymbolTable, new : &SymbolTable) -> Vec<Symbol> {
+	let mut out : Vec<Symbol> = vec![];
+	for x in old {
+		let (&symbol, info_new) = x;
+		if info_new.count != 1 {
+			continue;
+		}
+		match new.get(&symbol) {
+			Some(&TokenInfo{count:1, pos:_}) => out.push(symbol),
+			Some(&TokenInfo{count:_, pos:_}) => continue,
+			None => continue,
+		}
+	}
+	out
 }
