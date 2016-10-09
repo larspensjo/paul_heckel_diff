@@ -24,10 +24,8 @@ fn main() {
 	
 	let old_file = vec![start_sym, 'A', 'B', 'C', 'D', 'E', 'G', end_sym];
 	let new_file = vec![start_sym, 'D', 'E', 'F', 'G', 'A', 'C', end_sym];
-	let mut symbol_table_old = HashMap::new();
-	let mut symbol_table_new = HashMap::new();
-	count(&mut symbol_table_old, &old_file);
-	count(&mut symbol_table_new, &new_file);
+	let symbol_table_old = count_symbols(&old_file);
+	let symbol_table_new = count_symbols(&new_file);
     // println!("old symbol table {:?}", symbol_table_old);
     // println!("New symbol table {:?}", symbol_table_new);
 	let unique_symbols = get_unique_symbols(&symbol_table_old, &symbol_table_new);
@@ -82,7 +80,8 @@ fn update_unique_mappings(unique_symbols : &Vec<Symbol>, old : &SymbolTable, new
 	}
 }
 
-fn count(s : &mut SymbolTable,  v : &Vec<Symbol>) {
+fn count_symbols(v : &Vec<Symbol>) -> SymbolTable {
+	let mut s : SymbolTable = HashMap::new();
 	let mut line : usize = 0;
 	for symbol in v {
 		let new : TokenInfo = match s.get(&symbol) {
@@ -92,6 +91,7 @@ fn count(s : &mut SymbolTable,  v : &Vec<Symbol>) {
 		s.insert(*symbol, new);
 		line = line + 1;
 	}
+	s
 }
 
 fn get_unique_symbols(old : &SymbolTable, new : &SymbolTable) -> Vec<Symbol> {
