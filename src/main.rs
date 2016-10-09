@@ -1,6 +1,13 @@
 use std::collections::HashMap;
 
-type Reference = usize;
+#[derive(Debug)]
+#[derive(Clone)]
+enum Reference {
+	Unknown,
+	Delete,
+	Multiple,
+	Unique(usize),
+}
 
 #[derive(Debug)]
 struct TokenInfo {
@@ -16,8 +23,8 @@ fn main() {
 	
 	let old_file = vec![start_sym, 'A', 'B', 'C', 'D', 'E', 'G', end_sym];
 	let new_file = vec![start_sym, 'D', 'E', 'F', 'G', 'A', 'C', end_sym];
-	let mut symbol_table_old : SymbolTable = HashMap::new();
-	let mut symbol_table_new : SymbolTable = HashMap::new();
+	let mut symbol_table_old = HashMap::new();
+	let mut symbol_table_new = HashMap::new();
 	count(&mut symbol_table_old, old_file);
 	count(&mut symbol_table_new, new_file);
     // println!("old symbol table {:?}", symbol_table_old);
@@ -25,14 +32,22 @@ fn main() {
 	let unique_symbols = unique(&symbol_table_old, &symbol_table_new);
 	println!("Unique symbols: {:?}", unique_symbols);
 	
-	let mut old_mapping : Vec<Reference> = vec![0; symbol_table_old.len()];
-	let mut new_mapping : Vec<Reference> = vec![0; symbol_table_new.len()];
+	let mut old_mapping : Vec<Reference> = vec![Reference::Unknown; symbol_table_old.len()];
+	let mut new_mapping : Vec<Reference> = vec![Reference::Unknown; symbol_table_new.len()];
 	
 	for symbol in unique_symbols {
-		let TokenInfo{count:_, pos:line_new} = symbol_table_new[&symbol];
-		let TokenInfo{count:_, pos:line_old} = symbol_table_old[&symbol];
-		old_mapping[line_old] = line_new;
-		new_mapping[line_new] = line_old;
+		let TokenInfo{count:_, pos:ref ref_new} = symbol_table_new[&symbol];
+		let TokenInfo{count:_, pos:ref ref_old} = symbol_table_old[&symbol];
+		let line_new = match ref_new {
+			&Reference::Unique(l) => l,
+			_ => panic!(""),
+		};
+		let line_old = match ref_old {
+			&Reference::Unique(l) => l,
+			_ => panic!(""),
+		};
+		old_mapping[line_old] = Reference::Unique(line_new);
+		new_mapping[line_new] = Reference::Unique(line_old);
 	}
 	
 	println!("Mapping from old: {:?}", old_mapping);
@@ -40,11 +55,11 @@ fn main() {
 }
 
 fn count(s : &mut SymbolTable,  v : Vec<Symbol>) {
-	let mut line : Reference = 0;
+	let mut line : usize = 0;
 	for symbol in v {
 		let new : TokenInfo = match s.get(&symbol) {
-			Some(info) => TokenInfo{count: info.count+1, pos: line},
-			_ => TokenInfo {count:1, pos: line},
+			Some(info) => TokenInfo{count: info.count+1, pos: Reference::Multiple},
+			_ => TokenInfo {count:1, pos: Reference::Unique(line)},
 		};
 		s.insert(symbol, new);
 		line = line + 1;
