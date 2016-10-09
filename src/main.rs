@@ -42,23 +42,31 @@ fn main() {
 }
 
 fn update_neighbors(v1 : &Vec<Symbol>, v2 : &Vec<Symbol>, map1 : &mut Vec<Reference>, map2 : &mut Vec<Reference>) {
-	for i in 0 .. v1.len()-2 {
+	let mut upd = |i, neighbor : fn (x : usize) -> usize | {
 		let line_new = match map1[i] {
 			Reference::Confirmed(l) => l,
-			_ => continue,
+			_ => return,
 		};
 		// v1[i] and v2[line_new] are conrimed to be the same
-		let sym1 = match map1[i+1] {
-			Reference::Unknown => v1[i+1],
-			_ => continue,
+		let i_delta = neighbor(i);
+		let sym1 = match map1[i_delta] {
+			Reference::Unknown => v1[i_delta],
+			_ => return,
 		};
-		match map2[line_new+1] {
-			Reference::Unknown => if v2[line_new+1] != sym1 { continue; },
-			_ => continue,
+		let new_delta = neighbor(line_new);
+		match map2[new_delta] {
+			Reference::Unknown => if v2[new_delta] != sym1 { return; },
+			_ => return,
 		}
-		map1[i+1] = Reference::Confirmed(line_new+1);
-		map2[line_new+1] = Reference::Confirmed(i+1);
-		println!("Matched token {} one line {} with line {}", sym1,  i+1, line_new+1);
+		map1[i+1] = Reference::Confirmed(new_delta);
+		map2[line_new+1] = Reference::Confirmed(i_delta);
+		println!("Matched token {} one line {} with line {}", sym1,  i_delta, new_delta);
+	};
+	for i in 0 .. v1.len()-2 {
+		fn incr(x : usize) -> usize {x+1}
+		upd(i, incr);
+		fn decr(x : usize) -> usize {x-1}
+		upd(v1.len()-i-1, decr);
 	}
 }
 
