@@ -1,19 +1,17 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
-#[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Reference {
 	Unknown,
 	// Delete,
 	Multiple,
-	Confirmed(usize),
+	Confirmed(usize), // Referring a line number
 }
 
 #[derive(Debug)]
 struct TokenInfo {
-	count: u32,
-	pos: Reference, // -1 represents no position
+	count: u32,		// Number of occurences
+	pos: Reference,
 }
 type Symbol = char;
 type SymbolTable = HashMap<Symbol, TokenInfo>;
@@ -74,26 +72,22 @@ fn update_unique_mappings(unique_symbols : &Vec<Symbol>, old : &SymbolTable, new
 	for symbol in unique_symbols {
 		let TokenInfo{count:_, pos:ref ref_new} = new[symbol];
 		let TokenInfo{count:_, pos:ref ref_old} = old[symbol];
-		let line_new = match ref_new {
-			&Reference::Confirmed(l) => l,
-			_ => panic!(""),
-		};
-		let line_old = match ref_old {
-			&Reference::Confirmed(l) => l,
-			_ => panic!(""),
-		};
-		// println!("update_unique_mappings for character '{}' from line {} to line {}", symbol, line_old, line_new);
-		old_mapping[line_old] = Reference::Confirmed(line_new);
-		new_mapping[line_new] = Reference::Confirmed(line_old);
+		if let (&Reference::Confirmed(line_new), &Reference::Confirmed(line_old)) = (ref_new, ref_old) {
+			// println!("update_unique_mappings for character '{}' from line {} to line {}", symbol, line_old, line_new);
+			old_mapping[line_old] = Reference::Confirmed(line_new);
+			new_mapping[line_new] = Reference::Confirmed(line_old);
+		} else {
+			panic!("Only expecting confirmed lines for unique symbols");
+		}
 	}
 }
 
 fn count_symbols(v : &Vec<Symbol>) -> SymbolTable {
 	let mut s : SymbolTable = HashMap::new();
-	let mut line : usize = 0;
+	let mut line = 0;
 	for symbol in v {
-		let new : TokenInfo = match s.get(&symbol) {
-			Some(info) => TokenInfo{count: info.count+1, pos: Reference::Multiple},
+		let new = match s.get(&symbol) {
+			Some(info) => TokenInfo {count: info.count+1, pos: Reference::Multiple},
 			_ => TokenInfo {count:1, pos: Reference::Confirmed(line)},
 		};
 		s.insert(*symbol, new);
@@ -104,15 +98,12 @@ fn count_symbols(v : &Vec<Symbol>) -> SymbolTable {
 
 fn get_unique_symbols(old : &SymbolTable, new : &SymbolTable) -> Vec<Symbol> {
 	let mut out : Vec<Symbol> = vec![];
-	for x in old {
-		let (&symbol, info_new) = x;
+	for (symbol, info_new) in old {
 		if info_new.count != 1 {
 			continue;
 		}
-		match new.get(&symbol) {
-			Some(&TokenInfo{count:1, pos:_}) => out.push(symbol),
-			Some(&TokenInfo{count:_, pos:_}) => continue,
-			None => continue,
+		if let Some(&TokenInfo{count:1, pos:_}) = new.get(symbol) {
+			out.push(*symbol);
 		}
 	}
 	out
