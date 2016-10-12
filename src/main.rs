@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::hash::Hash;
+use std::clone::Clone;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
 enum Reference {
@@ -8,8 +11,7 @@ enum Reference {
 	Confirmed(usize), // Referring a line number
 }
 
-type Symbol = char;
-type SymbolTable = HashMap<Symbol, Reference>;
+type SymbolTable<T> = HashMap<T, Reference>;
 
 fn main() {
 	let start_sym = 'Ä';
@@ -34,7 +36,7 @@ fn main() {
 	println!("Mapping from new: {:?}", new_mapping);
 }
 
-fn update_neighbors(v1 : &Vec<Symbol>, v2 : &Vec<Symbol>, map1 : &mut Vec<Reference>, map2 : &mut Vec<Reference>) {
+fn update_neighbors<T>(v1 : &Vec<T>, v2 : &Vec<T>, map1 : &mut Vec<Reference>, map2 : &mut Vec<Reference>) where T : Eq + Display {
 	let mut upd = |i, neighbor : fn (x : usize) -> usize | {
 		let line_new = match map1[i] {
 			Reference::Confirmed(l) => l,
@@ -43,12 +45,12 @@ fn update_neighbors(v1 : &Vec<Symbol>, v2 : &Vec<Symbol>, map1 : &mut Vec<Refere
 		// v1[i] and v2[line_new] are confirmed to be the same
 		let i_delta = neighbor(i);
 		let sym1 = match map1[i_delta] {
-			Reference::Unknown => v1[i_delta],
+			Reference::Unknown => &v1[i_delta],
 			_ => return,
 		};
 		let new_delta = neighbor(line_new);
 		match map2[new_delta] {
-			Reference::Unknown => if v2[new_delta] != sym1 { return; },
+			Reference::Unknown => if v2[new_delta] != *sym1 { return; },
 			_ => return,
 		}
 		map1[i_delta] = Reference::Confirmed(new_delta);
@@ -64,7 +66,7 @@ fn update_neighbors(v1 : &Vec<Symbol>, v2 : &Vec<Symbol>, map1 : &mut Vec<Refere
 	}
 }
 
-fn update_unique_mappings(unique_symbols : &Vec<Symbol>, old : &SymbolTable, new : &SymbolTable, old_mapping : &mut Vec<Reference>, new_mapping : &mut Vec<Reference>) {
+fn update_unique_mappings<T>(unique_symbols : &Vec<T>, old : &SymbolTable<T>, new : &HashMap<T, Reference>, old_mapping : &mut Vec<Reference>, new_mapping : &mut Vec<Reference>) where T : Eq + Hash {
 	for symbol in unique_symbols {
 		let ref ref_new = new[symbol];
 		let ref ref_old = old[symbol];
@@ -78,27 +80,27 @@ fn update_unique_mappings(unique_symbols : &Vec<Symbol>, old : &SymbolTable, new
 	}
 }
 
-fn create_symbol_table(v : &Vec<Symbol>) -> SymbolTable {
-	let mut s : SymbolTable = HashMap::new();
+fn create_symbol_table<T>(v : &Vec<T>) -> SymbolTable<T> where T : Eq + Hash + Clone {
+	let mut s : SymbolTable<T> = HashMap::new();
 	let mut line = 0;
 	for symbol in v {
 		let new = match s.get(&symbol) {
 			Some(_) => Reference::Multiple,
 			_ => Reference::Confirmed(line),
 		};
-		s.insert(*symbol, new);
+		s.insert(symbol.clone(), new);
 		line = line + 1;
 	}
 	s
 }
 
 // Find all symbols that are  unique in both symbol tables
-fn get_unique_symbols(s1 : &SymbolTable, s2 : &SymbolTable) -> Vec<Symbol> {
-	let mut out : Vec<Symbol> = vec![];
+fn get_unique_symbols<T>(s1 : &HashMap<T, Reference>, s2 : &HashMap<T, Reference>) -> Vec<T> where T : Eq + Hash + Clone {
+	let mut out = vec![];
 	for (symbol, reference) in s1 {
 		if let Reference::Confirmed(_) = *reference {
 			if let Some(&Reference::Confirmed(_)) = s2.get(symbol) {
-				out.push(*symbol);
+				out.push(symbol.clone());
 			}
 		}
 	}
