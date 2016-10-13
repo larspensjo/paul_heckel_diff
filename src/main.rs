@@ -38,9 +38,12 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		let unique_symbols = Diff::get_unique_symbols(&symbol_table_old, &symbol_table_new);
 		// println!("old symbol table {:?}", symbol_table_old);
 		// println!("New symbol table {:?}", symbol_table_new);
-		let old_mapping : Vec<Reference> = vec![Reference::Unknown; old_file.len()];
-		let new_mapping : Vec<Reference> = vec![Reference::Unknown; new_file.len()];
-		let mut diff = Diff{symbol_table_old:symbol_table_old, symbol_table_new:symbol_table_new, old_mapping:old_mapping, new_mapping:new_mapping};
+		let mut diff = Diff {
+			symbol_table_old:	symbol_table_old,
+			symbol_table_new:	symbol_table_new,
+			old_mapping:		vec![Reference::Unknown; old_file.len()],
+			new_mapping:		vec![Reference::Unknown; new_file.len()]
+		};
 		diff.update_unique_mappings(&unique_symbols);
 		diff.update_neighbors(&old_file, &new_file);
 		diff
