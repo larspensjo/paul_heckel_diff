@@ -35,7 +35,6 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 	fn new(old_file : Vec<T>, new_file : Vec<T>) -> Diff<T> {
 		let symbol_table_old = Diff::create_symbol_table(&old_file);
 		let symbol_table_new = Diff::create_symbol_table(&new_file);
-		let unique_symbols = Diff::get_unique_symbols(&symbol_table_old, &symbol_table_new);
 		// println!("old symbol table {:?}", symbol_table_old);
 		// println!("New symbol table {:?}", symbol_table_new);
 		let mut diff = Diff {
@@ -44,6 +43,7 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 			old_mapping:		vec![Reference::Unknown; old_file.len()],
 			new_mapping:		vec![Reference::Unknown; new_file.len()]
 		};
+		let unique_symbols = diff.get_unique_symbols();
 		diff.update_unique_mappings(&unique_symbols);
 		diff.update_neighbors(&old_file, &new_file);
 		diff
@@ -108,11 +108,11 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 	}
 
 	// Find all symbols that are  unique in both symbol tables
-	fn get_unique_symbols(s1 : &HashMap<T, Reference>, s2 : &HashMap<T, Reference>) -> Vec<T> {
+	fn get_unique_symbols(&self) -> Vec<T> {
 		let mut out = vec![];
-		for (symbol, reference) in s1 {
-			if let Reference::Confirmed(_) = *reference {
-				if let Some(&Reference::Confirmed(_)) = s2.get(symbol) {
+		for (symbol, reference) in &self.symbol_table_new {
+			if let &Reference::Confirmed(_) = reference {
+				if let Some(&Reference::Confirmed(_)) = self.symbol_table_old.get(symbol) {
 					out.push(symbol.clone());
 				}
 			}
