@@ -43,8 +43,7 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 			old_mapping:		vec![Reference::Unknown; old_file.len()],
 			new_mapping:		vec![Reference::Unknown; new_file.len()]
 		};
-		let unique_symbols = diff.get_unique_symbols();
-		diff.update_unique_mappings(&unique_symbols);
+		diff.update_unique_mappings();
 		diff.update_neighbors(&old_file, &new_file);
 		diff
 	}
@@ -79,11 +78,9 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		}
 	}
 
-	fn update_unique_mappings(&mut self, unique_symbols : &Vec<T>) {
-		for symbol in unique_symbols {
-			let ref ref_new = self.symbol_table_new[symbol];
-			let ref ref_old = self.symbol_table_old[symbol];
-			if let (&Reference::Confirmed(line_new), &Reference::Confirmed(line_old)) = (ref_new, ref_old) {
+	fn update_unique_mappings(&mut self) {
+		for symbol in self.get_unique_symbols() {
+			if let (Some(&Reference::Confirmed(line_new)), Some(&Reference::Confirmed(line_old))) = (self.symbol_table_new.get(&symbol), self.symbol_table_old.get(&symbol)) {
 				// println!("update_unique_mappings for character '{}' from line {} to line {}", symbol, line_old, line_new);
 				self.old_mapping[line_old] = Reference::Confirmed(line_new);
 				self.new_mapping[line_new] = Reference::Confirmed(line_old);
