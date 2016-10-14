@@ -95,14 +95,12 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 
 	fn create_symbol_table(v : &Vec<T>) -> SymbolTable<T> {
 		let mut s : SymbolTable<T> = HashMap::new();
-		let mut line = 0;
-		for symbol in v {
+		for (line, symbol) in v.iter().enumerate() {
 			let new = match s.get(&symbol) {
 				Some(_) => Reference::Multiple,
 				_ => Reference::Confirmed(line),
 			};
 			s.insert(symbol.clone(), new);
-			line = line + 1;
 		}
 		s
 	}
