@@ -48,33 +48,33 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		diff
 	}
 
-	fn update_neighbors(&mut self, v1 : &Vec<T>, v2 : &Vec<T>) {
+	fn update_neighbors(&mut self, old_file : &Vec<T>, new_file : &Vec<T>) {
 		let mut upd = |i, neighbor : fn (x : usize) -> usize | {
 			let line_new = match self.old_mapping[i] {
 				Reference::Confirmed(l) => l,
 				_ => return,
 			};
-			// v1[i] and v2[line_new] are confirmed to be the same
+			// old_file[i] and new_file[line_new] are confirmed to be the same
 			let i_delta = neighbor(i);
 			let sym1 = match self.old_mapping[i_delta] {
-				Reference::Unknown => &v1[i_delta],
+				Reference::Unknown => &old_file[i_delta],
 				_ => return,
 			};
 			let new_delta = neighbor(line_new);
 			match self.new_mapping[new_delta] {
-				Reference::Unknown => if v2[new_delta] != *sym1 { return; },
+				Reference::Unknown => if new_file[new_delta] != *sym1 { return; },
 				_ => return,
 			}
 			self.old_mapping[i_delta] = Reference::Confirmed(new_delta);
 			self.new_mapping[new_delta] = Reference::Confirmed(i_delta);
 			println!("Matched token {} one line {} with line {}", sym1,  i_delta, new_delta);
 		};
-		let v1_len = v1.len();
-		for i in 0 .. v1_len-2 {
+		let old_file_len = old_file.len();
+		for i in 0 .. old_file_len-2 {
 			fn incr(x : usize) -> usize {x+1}
 			upd(i, incr);
 			fn decr(x : usize) -> usize {x-1}
-			upd(v1_len-i-1, decr);
+			upd(old_file_len-i-1, decr);
 		}
 	}
 
@@ -90,9 +90,9 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		}
 	}
 
-	fn create_symbol_table(v : &Vec<T>) -> SymbolTable<T> {
+	fn create_symbol_table(file : &Vec<T>) -> SymbolTable<T> {
 		let mut s : SymbolTable<T> = HashMap::new();
-		for (line, symbol) in v.iter().enumerate() {
+		for (line, symbol) in file.iter().enumerate() {
 			let new = match s.get(&symbol) {
 				Some(_) => Reference::Multiple,
 				_ => Reference::Confirmed(line),
