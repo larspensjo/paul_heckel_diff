@@ -36,13 +36,11 @@ fn main() {
 
 impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 	fn new(old_file : Vec<T>, new_file : Vec<T>) -> Diff<T> {
-		let symbol_table_old = Diff::create_symbol_table(&old_file);
-		let symbol_table_new = Diff::create_symbol_table(&new_file);
 		// println!("old symbol table {:?}", symbol_table_old);
 		// println!("New symbol table {:?}", symbol_table_new);
 		let mut diff = Diff {
-			symbol_table_old:	symbol_table_old,
-			symbol_table_new:	symbol_table_new,
+			symbol_table_old:	Diff::create_symbol_table(&old_file),
+			symbol_table_new:	Diff::create_symbol_table(&new_file),
 			old_mapping:		vec![Reference::Unknown; old_file.len()],
 			new_mapping:		vec![Reference::Unknown; new_file.len()],
 			old_file:			old_file,
@@ -58,8 +56,7 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		fn pretty_print_file<T>(file : &Vec<T>, mapping : &Vec<Reference>) where T : Display {
 			for line in 1 .. file.len() - 1 {
 				let operation = format!("{:?}", mapping[line]);
-				let symbol = &file[line];
-				println!("{:3} {:15}: {}", line, operation, symbol);
+				println!("{:3} {:15}: {}", line, operation, &file[line]);
 			}
 		}
 		pretty_print_file(&self.old_file, &self.old_mapping);
@@ -85,24 +82,24 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 	fn update_neighbors(&mut self) {
 		let old_file_len = self.old_file.len();
 		let mut upd = |i, neighbor : fn (x : usize) -> usize | {
-			let line_new = match self.old_mapping[i] {
-				Reference::Confirmed(l) => l,
+			let new_neighbor = match self.old_mapping[i] {
+				Reference::Confirmed(l) => neighbor(l),
 				_ => return,
 			};
-			// old_file[i] and new_file[line_new] are confirmed to be the same
-			let i_delta = neighbor(i);
-			let sym1 = match self.old_mapping[i_delta] {
-				Reference::Unknown => &self.old_file[i_delta],
+			// old_file[i] and new_file are confirmed to have corresponding lines.
+			// Now check if the neighbor in both files are the same.
+			let old_neighbor = neighbor(i);
+			let sym1 = match self.old_mapping[old_neighbor] {
+				Reference::Unknown => &self.old_file[old_neighbor],
 				_ => return,
 			};
-			let new_delta = neighbor(line_new);
-			match self.new_mapping[new_delta] {
-				Reference::Unknown => if self.new_file[new_delta] != *sym1 { return; },
+			match self.new_mapping[new_neighbor] {
+				Reference::Unknown => if self.new_file[new_neighbor] != *sym1 { return; },
 				_ => return,
 			}
-			self.old_mapping[i_delta] = Reference::Confirmed(new_delta);
-			self.new_mapping[new_delta] = Reference::Confirmed(i_delta);
-			println!("Matched token {} one line {} with line {}", sym1,  i_delta, new_delta);
+			self.old_mapping[old_neighbor] = Reference::Confirmed(new_neighbor);
+			self.new_mapping[new_neighbor] = Reference::Confirmed(old_neighbor);
+			println!("Matched token '{}' one line {} with line {}", sym1,  old_neighbor, new_neighbor);
 		};
 		for i in 0 .. old_file_len-2 {
 			fn incr(x : usize) -> usize {x+1}
