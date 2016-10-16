@@ -22,11 +22,11 @@ struct Diff<T> {
 }
 
 fn main() {
-	let start_sym = 'Ä';
-	let end_sym = 'Ö';
+	let start_sym = "Ä";
+	let end_sym = "Ö";
 
-	let old_file = vec![start_sym, 'A', 'B', 'C', 'D', 'E', 'G', end_sym];
-	let new_file = vec![start_sym, 'D', 'E', 'F', 'G', 'A', 'C', end_sym];
+	let old_file = vec![start_sym, "A", "B", "C", "D", "E", "G", end_sym];
+	let new_file = vec![start_sym, "D", "E", "F", "G", "A", "C", end_sym];
 	let diff = Diff::new(old_file, new_file);
 	println!("Mapping from old: {:?}", diff.old_mapping);
 	println!("Mapping from new: {:?}", diff.new_mapping);
