@@ -56,8 +56,16 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 	}
 	
 	fn pretty_print(&self) {
-		assert!(self.old_file.len() == self.old_mapping.len());
-		assert!(self.new_file.len() == self.new_mapping.len());
+		fn pretty_print_file<T>(file : &Vec<T>, mapping : &Vec<Reference>) where T : Display {
+			for line in 1 .. file.len() - 1 {
+				let operation = format!("{:?}", mapping[line]);
+				let symbol = &file[line];
+				println!("{:3} {:15}: {}", line, operation, symbol);
+			}
+		}
+		pretty_print_file(&self.old_file, &self.old_mapping);
+		println!("");
+		pretty_print_file(&self.new_file, &self.new_mapping);
 	}
 
 	fn replace_unknown(&mut self) {
