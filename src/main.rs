@@ -32,6 +32,7 @@ fn main() {
 	let diff = Diff::new(old_file, new_file);
 	println!("Mapping from old: {:?}", diff.old_mapping);
 	println!("Mapping from new: {:?}", diff.new_mapping);
+	diff.pretty_print();
 }
 
 impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
@@ -52,6 +53,11 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		diff.update_neighbors();
 		diff.replace_unknown();
 		diff
+	}
+	
+	fn pretty_print(&self) {
+		assert!(self.old_file.len() == self.old_mapping.len());
+		assert!(self.new_file.len() == self.new_mapping.len());
 	}
 
 	fn replace_unknown(&mut self) {
