@@ -19,6 +19,8 @@ struct Diff<T> {
 	symbol_table_new : SymbolTable<T>,
 	old_mapping : Vec<Reference>,
 	new_mapping : Vec<Reference>,
+	old_file : Vec<T>,
+	new_file : Vec<T>,
 }
 
 fn main() {
@@ -42,10 +44,12 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 			symbol_table_old:	symbol_table_old,
 			symbol_table_new:	symbol_table_new,
 			old_mapping:		vec![Reference::Unknown; old_file.len()],
-			new_mapping:		vec![Reference::Unknown; new_file.len()]
+			new_mapping:		vec![Reference::Unknown; new_file.len()],
+			old_file:			old_file,
+			new_file:			new_file,
 		};
 		diff.update_unique_mappings();
-		diff.update_neighbors(&old_file, &new_file);
+		diff.update_neighbors();
 		diff.replace_unknown();
 		diff
 	}
@@ -65,7 +69,8 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		}
 	}
 
-	fn update_neighbors(&mut self, old_file : &Vec<T>, new_file : &Vec<T>) {
+	fn update_neighbors(&mut self) {
+		let old_file_len = self.old_file.len();
 		let mut upd = |i, neighbor : fn (x : usize) -> usize | {
 			let line_new = match self.old_mapping[i] {
 				Reference::Confirmed(l) => l,
@@ -74,19 +79,18 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 			// old_file[i] and new_file[line_new] are confirmed to be the same
 			let i_delta = neighbor(i);
 			let sym1 = match self.old_mapping[i_delta] {
-				Reference::Unknown => &old_file[i_delta],
+				Reference::Unknown => &self.old_file[i_delta],
 				_ => return,
 			};
 			let new_delta = neighbor(line_new);
 			match self.new_mapping[new_delta] {
-				Reference::Unknown => if new_file[new_delta] != *sym1 { return; },
+				Reference::Unknown => if self.new_file[new_delta] != *sym1 { return; },
 				_ => return,
 			}
 			self.old_mapping[i_delta] = Reference::Confirmed(new_delta);
 			self.new_mapping[new_delta] = Reference::Confirmed(i_delta);
 			println!("Matched token {} one line {} with line {}", sym1,  i_delta, new_delta);
 		};
-		let old_file_len = old_file.len();
 		for i in 0 .. old_file_len-2 {
 			fn incr(x : usize) -> usize {x+1}
 			upd(i, incr);
