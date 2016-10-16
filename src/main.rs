@@ -6,7 +6,8 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq, Clone)]
 enum Reference {
 	Unknown,
-	// Delete,
+	Delete,
+	Insert,
 	Multiple,
 	Confirmed(usize), // Referring a line number
 }
@@ -45,7 +46,23 @@ impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
 		};
 		diff.update_unique_mappings();
 		diff.update_neighbors(&old_file, &new_file);
+		diff.replace_unknown();
 		diff
+	}
+
+	fn replace_unknown(&mut self) {
+		// Unknown references in the old mapping are deleted
+		for r in self.old_mapping.iter_mut() {
+			if let Reference::Unknown = *r {
+				*r = Reference::Delete;
+			}
+		}
+		// Unknown references in the old mapping are inserted
+		for r in self.new_mapping.iter_mut() {
+			if let Reference::Unknown = *r {
+				*r = Reference::Insert;
+			}
+		}
 	}
 
 	fn update_neighbors(&mut self, old_file : &Vec<T>, new_file : &Vec<T>) {
