@@ -12,6 +12,14 @@ enum Reference {
 	Confirmed(usize), // Referring a line number
 }
 
+// Aggregate similar lines together into blocks
+#[derive(Debug)]
+enum BlockReference {
+	Match {new_line_begin: usize, count: usize},
+	Delete {old_line_begin: usize, count: usize},
+	Dummy,
+}
+
 type SymbolTable<T> = HashMap<T, Reference>;
 
 struct Diff<'a, T:'a> {
@@ -24,14 +32,16 @@ struct Diff<'a, T:'a> {
 }
 
 fn main() {
-	let old_file = "BEGIN a mass of latin words falls upon the relevant facts like soft snow , covering up the details . END".split(" ").collect();
-	let new_file = "BEGIN much writing is like snow , a mass of long words and phrases falls upon the relevant facts covering up the details . END".split(" ").collect();
+	let old_file : Vec<&str> = "BEGIN a mass of latin words falls upon the relevant facts like soft snow , covering up the details . END".split(" ").collect();
+	let new_file : Vec<&str> = "BEGIN much writing is like snow , a mass of long words and phrases falls upon the relevant facts covering up the details . END".split(" ").collect();
 	// let old_file = vec!["Ä", "A", "B", "C", "D", "E", "G", "Ö";
 	// let new_file = vec!["Ä", "D", "E", "F", "G", "A", "C", "Ö"];
 	let diff = Diff::new(&old_file, &new_file);
 	println!("Mapping from old: {:?}", diff.old_mapping);
 	println!("Mapping from new: {:?}", diff.new_mapping);
 	diff.pretty_print();
+	let aggr = diff.aggregate();
+	println!("Debug: {:?}", aggr);
 }
 
 impl<'a, T> Diff<'a, T> where T : Eq + Hash + Clone + Display {
@@ -50,6 +60,38 @@ impl<'a, T> Diff<'a, T> where T : Eq + Hash + Clone + Display {
 		diff.update_neighbors();
 		diff.replace_unknown();
 		diff
+	}
+	
+	fn aggregate(&self) -> Vec<BlockReference> {
+		let mut out_old = vec![];
+		let mut last_block = BlockReference::Dummy;
+		for line in 1 .. &self.old_mapping.len() - 1 {
+			let mapping = &self.old_mapping[line];
+			match *mapping {
+				Reference::Confirmed(new_line) => {
+					if let BlockReference::Match{new_line_begin: prev_line, count: prev_count} = last_block {
+						last_block = BlockReference::Match{new_line_begin: prev_line, count: prev_count+1};
+					} else {
+						out_old.push(last_block);
+						last_block = BlockReference::Match{new_line_begin:new_line, count: 1};
+					}
+				},
+				Reference::Delete => {
+					if let BlockReference::Delete{old_line_begin: prev_line, count: prev_count} = last_block {
+						last_block = BlockReference::Delete{old_line_begin: prev_line, count: prev_count+1};
+					} else {
+						out_old.push(last_block);
+						last_block = BlockReference::Delete{old_line_begin:line, count: 1};
+					}
+				},
+				Reference::Unknown => panic!(""),
+				Reference::Insert => panic!(""),
+				Reference::Multiple => panic!(""),
+			}
+			// println!("{:3}: {}", line, &self.old_file[line]);
+		}
+		out_old.push(last_block);
+		out_old
 	}
 	
 	fn pretty_print(&self) {
