@@ -14,13 +14,13 @@ enum Reference {
 
 type SymbolTable<T> = HashMap<T, Reference>;
 
-struct Diff<T> {
+struct Diff<'a, T:'a> {
 	symbol_table_old : SymbolTable<T>,
 	symbol_table_new : SymbolTable<T>,
 	old_mapping : Vec<Reference>,
 	new_mapping : Vec<Reference>,
-	old_file : Vec<T>,
-	new_file : Vec<T>,
+	old_file : &'a Vec<T>,
+	new_file : &'a Vec<T>,
 }
 
 fn main() {
@@ -28,14 +28,14 @@ fn main() {
 	let new_file = "BEGIN much writing is like snow , a mass of long words and phrases falls upon the relevant facts covering up the details . END".split(" ").collect();
 	// let old_file = vec!["Ä", "A", "B", "C", "D", "E", "G", "Ö";
 	// let new_file = vec!["Ä", "D", "E", "F", "G", "A", "C", "Ö"];
-	let diff = Diff::new(old_file, new_file);
+	let diff = Diff::new(&old_file, &new_file);
 	println!("Mapping from old: {:?}", diff.old_mapping);
 	println!("Mapping from new: {:?}", diff.new_mapping);
 	diff.pretty_print();
 }
 
-impl<T> Diff<T> where T : Eq + Hash + Clone + Display {
-	fn new(old_file : Vec<T>, new_file : Vec<T>) -> Diff<T> {
+impl<'a, T> Diff<'a, T> where T : Eq + Hash + Clone + Display {
+	fn new(old_file : &'a Vec<T>, new_file : &'a Vec<T>) -> Diff<'a, T> {
 		// println!("old symbol table {:?}", symbol_table_old);
 		// println!("New symbol table {:?}", symbol_table_new);
 		let mut diff = Diff {
